@@ -1,0 +1,13 @@
+{
+  "_note": "Define data schemas for all structured inputs/outputs used in this command's pipeline.",
+  "example_record": {
+    "description": "Replace with your schema name and description",
+    "required": {
+      "id": "str",
+      "status": "enum:pending|in_progress|completed|failed"
+    },
+    "optional": {
+      "error": "str"
+    }
+  }
+}

@@ -1,0 +1,428 @@
+{
+  "stages": [
+    {
+      "id": "analyze_scope",
+      "owner": "chat",
+      "purpose": "Classify the current change scope for analyze-only or local-review-prep `/ai-change` usage.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": [],
+      "outputs": [],
+      "type": "deterministic"
+    },
+    {
+      "id": "run_management",
+      "owner": "chat",
+      "purpose": "Open a local ai-change run, create or reuse the branch for that run, and persist any explicit acceptance-source, acceptance-mode, and scope metadata that later review stages must import.",
+      "scripts": ["ai_change_governance_cli", "ai_change_guard_hook"],
+      "prompts": [],
+      "outputs": [
+        ".claude/ai_change_runs/<run_id>/run_manifest.json"
+      ],
+      "type": "deterministic"
+    },
+    {
+      "id": "autopilot_loop",
+      "owner": "chat",
+      "purpose": "Run the bounded ai-change coding loop inside one session: implement one coherent phase, checkpoint it, force a local review pass for that phase-complete branch state, ingest reviewer context, and only then decide whether to stop or begin the next implementation phase without opening a separate transport surface.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": [],
+      "outputs": [
+        ".claude/ai_change_runs/<run_id>/run_manifest.json"
+      ],
+      "type": "deterministic"
+    },
+    {
+      "id": "checkpoint_commit",
+      "owner": "chat",
+      "purpose": "Commit a staged checkpoint to the run branch and refresh the local review artifacts from the full branch diff.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": [],
+      "outputs": [
+        ".claude/ai_change_runs/<run_id>/review_manifest.json",
+        ".claude/ai_change_runs/<run_id>/review_bundle.md"
+      ],
+      "type": "deterministic"
+    },
+    {
+      "id": "review_preparation",
+      "owner": "chat",
+      "purpose": "Generate the local governance summary, selected checks, reviewer guidance, imported acceptance inventory, and scoped/strict acceptance gates that accompany the branch-local review pass.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": [],
+      "outputs": [
+        ".claude/ai_change_runs/<run_id>/review_manifest.json",
+        ".claude/ai_change_runs/<run_id>/review_bundle.md"
+      ],
+      "type": "deterministic"
+    },
+    {
+      "id": "review_feedback_ingest",
+      "owner": "chat",
+      "purpose": "Refresh the local branch-diff review packet into deterministic artifacts, preserve or update the current local review verdict for the reviewed branch state, record machine-readable scoped/strict acceptance evidence when required, and block approval persistence when any scoped/strict required acceptance evidence is missing or failing or when a required independent AI review artifact is missing, stale, self-authored, or incomplete for the reviewed head commit while retaining unscoped imported bullets as context inventory.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": [],
+      "outputs": [
+        ".claude/ai_change_runs/<run_id>/review_feedback.json",
+        ".claude/ai_change_runs/<run_id>/review_feedback.md"
+      ],
+      "type": "deterministic"
+    },
+    {
+      "id": "ready_for_review_transition",
+      "owner": "chat",
+      "purpose": "Require a clean worktree, refresh the local review artifacts, and mark the branch ready for local review.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": [],
+      "outputs": [
+        ".claude/ai_change_runs/<run_id>/review_manifest.json",
+        ".claude/ai_change_runs/<run_id>/review_bundle.md"
+      ],
+      "type": "deterministic"
+    },
+    {
+      "id": "independent_ai_review",
+      "owner": "ai_reviewer",
+      "purpose": "Launch a separate AI code-review session from a clean worktree for the ready branch state, fail closed if the reviewer mutates tracked paths, unapproved untracked paths, or ignored run-state files other than the review artifacts, and persist an independent review artifact tied to the reviewed head commit, including known distinct implementer/reviewer identity/session values, finding counts, contract-sufficiency assessment, overfitting assessment, policy-substitution assessment, and high-risk `/research` audit answers when required.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": ["independent_ai_review_prompt"],
+      "outputs": [
+        ".claude/ai_change_runs/<run_id>/independent_review.json",
+        ".claude/ai_change_runs/<run_id>/independent_review.md"
+      ],
+      "type": "generative"
+    },
+    {
+      "id": "local_branch_review",
+      "owner": "chat",
+      "purpose": "Review the current branch diff locally from the review bundle and report findings in-session; this is the default approval boundary for state-changing work.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": [],
+      "outputs": [
+        "In-session branch review findings"
+      ],
+      "type": "generative"
+    },
+    {
+      "id": "local_git_push_guard",
+      "owner": "git_client",
+      "purpose": "Block direct pushes to the protected branch from local clones when server-side branch protection is unavailable on the private repo.",
+      "scripts": ["ai_change_pre_push_guard"],
+      "prompts": [],
+      "outputs": [
+        "Rejected direct push attempt to main"
+      ],
+      "type": "deterministic"
+    },
+    {
+      "id": "status_resume",
+      "owner": "chat",
+      "purpose": "Show the active git/local-review run status without reopening unrelated change context.",
+      "scripts": ["ai_change_governance_cli"],
+      "prompts": [],
+      "outputs": [],
+      "type": "deterministic"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "ai_change_governance_cli",
+      "file": ".claude/scripts/ai_change_governance.py",
+      "purpose": "Classify change scope, enforce git/local-review governance checks, write review artifacts, and surface active run status.",
+      "stage_ids": [
+        "analyze_scope",
+        "run_management",
+        "autopilot_loop",
+        "checkpoint_commit",
+        "review_preparation",
+        "review_feedback_ingest",
+        "ready_for_review_transition",
+        "independent_ai_review",
+        "status_resume",
+        "local_branch_review"
+      ],
+      "type": "deterministic",
+      "delegates_to": [],
+      "functions": [
+        {
+          "id": "analyze_change",
+          "purpose": "Classify a path-scoped change, choose the default local review posture, and attach any needed domain-specific deterministic checks, acceptance inventory, and scoped/strict acceptance gates.",
+          "type": "deterministic",
+          "inputs": [
+            {
+              "name": "paths",
+              "schema": "list[str]"
+            },
+            {
+              "name": "acceptance_sources",
+              "schema": "list[str]"
+            },
+            {
+              "name": "acceptance_mode",
+              "schema": "enum:scoped|strict"
+            },
+            {
+              "name": "acceptance_scope_file",
+              "schema": "str | null"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "report",
+              "schema": "governance_report"
+            }
+          ]
+        },
+        {
+          "id": "start_run",
+          "purpose": "Create a git/local-review ai-change run manifest, including any explicit acceptance-source, acceptance-mode, and scope metadata that should flow into later review artifacts.",
+          "type": "deterministic",
+          "inputs": [
+            {
+              "name": "task_summary",
+              "schema": "str"
+            },
+            {
+              "name": "acceptance_sources",
+              "schema": "list[str]"
+            },
+            {
+              "name": "acceptance_mode",
+              "schema": "enum:scoped|strict"
+            },
+            {
+              "name": "acceptance_scope_file",
+              "schema": "str | null"
+            },
+            {
+              "name": "implementer_id",
+              "schema": "str | null"
+            },
+            {
+              "name": "implementer_session_id",
+              "schema": "str | null"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "run_manifest",
+              "schema": "ai_change_run_manifest"
+            }
+          ]
+        },
+        {
+          "id": "autopilot_start",
+          "purpose": "Create an autopilot ai-change run manifest so the chat-owned session can iterate on coding, checkpoints, and local review feedback without the user manually sequencing each subcommand, while preserving any explicit acceptance-source, acceptance-mode, and scope metadata for later review gates.",
+          "type": "deterministic",
+          "inputs": [
+            {
+              "name": "task_summary",
+              "schema": "str"
+            },
+            {
+              "name": "acceptance_sources",
+              "schema": "list[str]"
+            },
+            {
+              "name": "acceptance_mode",
+              "schema": "enum:scoped|strict"
+            },
+            {
+              "name": "acceptance_scope_file",
+              "schema": "str | null"
+            },
+            {
+              "name": "implementer_id",
+              "schema": "str | null"
+            },
+            {
+              "name": "implementer_session_id",
+              "schema": "str | null"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "run_manifest",
+              "schema": "ai_change_run_manifest"
+            }
+          ]
+        },
+        {
+          "id": "checkpoint_run",
+          "purpose": "Commit a run checkpoint from staged or explicit-path changes, then refresh the review bundle for the branch.",
+          "type": "deterministic",
+          "inputs": [
+            {
+              "name": "run_id",
+              "schema": "str"
+            },
+            {
+              "name": "message",
+              "schema": "str"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "checkpoint_payload",
+              "schema": "obj"
+            }
+          ]
+        },
+        {
+          "id": "prepare_pr",
+          "purpose": "Write the local governance summary and machine-readable review manifest for a git branch change set, including the reviewed head-commit identity, imported acceptance inventory, scoped/strict acceptance requirements, and any named scoped required evidence artifacts that later review must judge against the same branch state; the command name remains a compatibility alias.",
+          "type": "deterministic",
+          "inputs": [
+            {
+              "name": "run_id",
+              "schema": "str"
+            },
+            {
+              "name": "paths",
+              "schema": "list[str]"
+            },
+            {
+              "name": "acceptance_sources",
+              "schema": "list[str]"
+            },
+            {
+              "name": "acceptance_mode",
+              "schema": "enum:scoped|strict"
+            },
+            {
+              "name": "acceptance_scope_file",
+              "schema": "str | null"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "review_manifest",
+              "schema": "ai_change_review_manifest"
+            }
+          ]
+        },
+        {
+          "id": "conduct_independent_review",
+          "purpose": "Launch a separate AI code-review provider session and write independent review JSON/Markdown artifacts for the reviewed head commit.",
+          "type": "generative",
+          "inputs": [
+            {
+              "name": "run_id",
+              "schema": "str"
+            },
+            {
+              "name": "provider",
+              "schema": "enum:claude|codex"
+            },
+            {
+              "name": "model",
+              "schema": "str | null"
+            },
+            {
+              "name": "reviewer_id",
+              "schema": "str | null"
+            },
+            {
+              "name": "reviewer_session_id",
+              "schema": "str | null"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "independent_review",
+              "schema": "ai_change_independent_review"
+            }
+          ]
+        },
+        {
+          "id": "collect_review_feedback",
+          "purpose": "Refresh the latest local branch-diff review packet into feedback artifacts for the current run, while preserving or updating the machine-readable verdict for the same reviewed head commit, recording machine-readable scoped/strict acceptance evidence, and blocking `approved` / `approved_with_advisories` persistence when any scoped/strict required acceptance evidence is `missing` or `fail` or when required independent AI review validation fails.",
+          "type": "deterministic",
+          "inputs": [
+            {
+              "name": "run_id",
+              "schema": "str"
+            },
+            {
+              "name": "acceptance_evidence_file",
+              "schema": "str | null"
+            },
+            {
+              "name": "acceptance_mode",
+              "schema": "enum:scoped|strict"
+            },
+            {
+              "name": "acceptance_scope_file",
+              "schema": "str | null"
+            },
+            {
+              "name": "independent_review_artifact",
+              "schema": "str | null"
+            },
+            {
+              "name": "reviewer_id",
+              "schema": "str | null"
+            },
+            {
+              "name": "reviewer_session_id",
+              "schema": "str | null"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "review_feedback",
+              "schema": "ai_change_review_feedback_manifest"
+            }
+          ]
+        },
+        {
+          "id": "ready_for_review",
+          "purpose": "Refresh review artifacts for the run branch and mark that branch ready for local review.",
+          "type": "deterministic",
+          "inputs": [
+            {
+              "name": "run_id",
+              "schema": "str"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "ready_payload",
+              "schema": "obj"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai_change_guard_hook",
+      "file": ".claude/hooks/ai_change_guard.py",
+      "purpose": "Block direct edits outside a real git repository so ai-change cannot silently bypass branch-local review transport.",
+      "stage_ids": [
+        "run_management"
+      ],
+      "type": "deterministic",
+      "delegates_to": []
+    },
+    {
+      "id": "ai_change_pre_push_guard",
+      "file": ".githooks/pre-push",
+      "purpose": "Reject direct pushes to the protected branch from local clones unless an explicit emergency bypass is set.",
+      "stage_ids": [
+        "local_git_push_guard"
+      ],
+      "type": "deterministic",
+      "delegates_to": []
+    }
+  ],
+  "prompts": [
+    {
+      "id": "independent_ai_review_prompt",
+      "purpose": "Instruct the separate AI reviewer to inspect the branch diff, report concrete findings, and explicitly challenge contract sufficiency, overfitting, policy substitutions, and high-risk `/research` audit obligations.",
+      "type": "generative",
+      "outputs": [
+        ".claude/ai_change_runs/<run_id>/independent_review.json",
+        ".claude/ai_change_runs/<run_id>/independent_review.md"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "_note": "Define all enum values and system-wide constants used in this command's pipeline.",
+  "example_statuses": {
+    "valid": ["pending", "in_progress", "completed", "failed"],
+    "terminal": ["completed", "failed"]
+  }
+}

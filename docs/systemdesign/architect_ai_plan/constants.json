@@ -1,0 +1,52 @@
+{
+  "default_depth": "auto",
+  "resolved_default_depth": "standard",
+  "artifact_directory": ".claude/ai_plan_runs",
+  "run_id_prefix": "ai-plan",
+  "depths": ["minimal", "standard", "deep"],
+  "required_artifacts": [
+    "run_manifest.json",
+    "input_summary.md",
+    "plan_trace.json",
+    "decision_surface_inventory.json",
+    "implementation_slices.md",
+    "acceptance_scope.json",
+    "required_checks.md",
+    "open_policy_questions.md",
+    "ai_change_handoff.json",
+    "ai_change_handoff.md"
+  ],
+  "deep_review_artifacts": [
+    "architecture_review.json",
+    "architecture_review.md",
+    "harness_review.json",
+    "harness_review.md",
+    "llm_delegation_review.json",
+    "llm_delegation_review.md",
+    "plan_review_feedback.json",
+    "plan_review_feedback.md"
+  ],
+  "prompt_versions": {
+    "depth_classification": "ai-plan-depth-classification-v1",
+    "plan_trace": "ai-plan-trace-v1",
+    "decision_surface": "ai-plan-decision-surface-v1",
+    "architecture_review": "ai-plan-architecture-review-v1",
+    "harness_review": "ai-plan-harness-review-v1",
+    "llm_delegation_review": "ai-plan-llm-delegation-review-v1"
+  },
+  "decision_surfaces": ["deterministic", "generative", "hybrid"],
+  "deep_depth_triggers": [
+    "command contract",
+    "shared workflow",
+    "systemdesign",
+    "prompt",
+    "harness",
+    "review",
+    "evaluation",
+    "multi-agent",
+    "llm delegation",
+    "semantic judgment",
+    "template propagation"
+  ],
+  "handoff_command": "/ai-change autopilot"
+}

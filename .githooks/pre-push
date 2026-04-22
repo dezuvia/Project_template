@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+protected_branch="${AI_CHANGE_PROTECTED_BRANCH:-main}"
+
+if [ "${AI_CHANGE_ALLOW_DIRECT_MAIN_PUSH:-}" = "1" ]; then
+  exit 0
+fi
+
+while read -r local_ref local_sha remote_ref remote_sha
+do
+  if [ "${remote_ref:-}" = "refs/heads/${protected_branch}" ]; then
+    echo "Direct pushes to ${protected_branch} are blocked in this repo." >&2
+    echo "Push a feature branch, open a GitHub pull request, and merge from the PR." >&2
+    echo "Set AI_CHANGE_ALLOW_DIRECT_MAIN_PUSH=1 only for an explicit emergency bypass." >&2
+    exit 1
+  fi
+done
+
+exit 0

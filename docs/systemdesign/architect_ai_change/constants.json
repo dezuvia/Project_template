@@ -1,0 +1,41 @@
+{
+  "default_workflow_mode": "git_local_review",
+  "default_review_transport": "local_branch_diff",
+  "default_local_governance_role": "primary_review_and_checks",
+  "default_execution_mode": "manual",
+  "default_acceptance_mode": "scoped",
+  "default_independent_review_provider": "codex",
+  "independent_review_prompt_version": "ai-change-independent-review-v1",
+  "acceptance_modes": ["scoped", "strict"],
+  "default_branch_prefix": "ai-change/",
+  "default_review_state": "deferred_until_ready",
+  "default_checkpoint_mode": "staged_only",
+  "default_autopilot_max_review_cycles": 3,
+  "permanent_artifacts": [
+    ".claude/ai_change_runs/<run_id>/run_manifest.json",
+    ".claude/ai_change_runs/<run_id>/review_manifest.json",
+    ".claude/ai_change_runs/<run_id>/review_bundle.md",
+    ".claude/ai_change_runs/<run_id>/independent_review.json",
+    ".claude/ai_change_runs/<run_id>/independent_review.md",
+    ".claude/ai_change_runs/<run_id>/review_feedback.json",
+    ".claude/ai_change_runs/<run_id>/review_feedback.md"
+  ],
+  "review_rule_sources": [
+    "docs/coder_guide.md",
+    "docs/ai_change_governance.md",
+    "docs/architecture.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".claude/commands/ai-change.md"
+  ],
+  "dynamic_review_rule_source_policy": "Any repo-relative path actually inspected during local branch review is also a valid rule_source.",
+  "checkpoint_default_policy": "Commit only already staged changes unless the caller explicitly passes --paths or --all.",
+  "autopilot_policy": "Autopilot may checkpoint, mark local review bundles ready, run independent AI review, and refresh review feedback automatically inside one session, but it must not auto-merge.",
+  "acceptance_mode_policy": "Scoped mode is the default local review mode: unscoped imported acceptance-source bullets are context/audit inventory, while only explicit scope files create scoped approval-blocking evidence. Strict mode preserves the older all-imported-requirements blocking behavior.",
+  "independent_review_policy": "Medium/high-risk approval persistence requires a fresh AI-generated independent review artifact for the reviewed head commit, with known and distinct implementer/reviewer identity/session values in the durable artifact and no tracked, unapproved untracked, or ignored run-state mutations by the reviewer. Codex child review fails closed under CODEX_SANDBOX_NETWORK_DISABLED unless CODEX_CHILD_NETWORK_ALLOWED=1 is explicitly set for that launch.",
+  "hook_settings_path": ".claude/settings.json",
+  "hook_guard_path": ".claude/hooks/ai_change_guard.py",
+  "git_push_guard_path": ".githooks/pre-push",
+  "expected_git_hooks_path": ".githooks",
+  "protected_branch": "main"
+}

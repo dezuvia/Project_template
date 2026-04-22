@@ -1,0 +1,201 @@
+{
+  "stages": [
+    {
+      "id": "intake",
+      "owner": "chat",
+      "purpose": "Collect the planning request, source paths, conversation summary, requested depth, and title before deterministic artifact creation.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": [],
+      "outputs": [".claude/ai_plan_runs/<run_id>/input_summary.md"],
+      "type": "deterministic"
+    },
+    {
+      "id": "depth_classification",
+      "owner": "chat",
+      "purpose": "Choose minimal, standard, or deep planning depth and record the rationale. Ambiguous depth decisions are planner-owned judgment, not deterministic approval.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": ["depth_classification_prompt"],
+      "outputs": [".claude/ai_plan_runs/<run_id>/run_manifest.json"],
+      "type": "generative"
+    },
+    {
+      "id": "plan_trace_build",
+      "owner": "chat",
+      "purpose": "Build stable trace ids for requirements, decisions, implementation slices, acceptance requirements, and evidence expectations.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": ["plan_trace_prompt"],
+      "outputs": [
+        ".claude/ai_plan_runs/<run_id>/plan_trace.json",
+        ".claude/ai_plan_runs/<run_id>/implementation_slices.md",
+        ".claude/ai_plan_runs/<run_id>/acceptance_scope.json"
+      ],
+      "type": "hybrid"
+    },
+    {
+      "id": "decision_surface_classification",
+      "owner": "planner",
+      "purpose": "Classify meaningful behavior decisions as deterministic, generative, or hybrid and require explicit safety justification for deterministic handling of generative decisions.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": ["decision_surface_prompt"],
+      "outputs": [".claude/ai_plan_runs/<run_id>/decision_surface_inventory.json"],
+      "type": "generative"
+    },
+    {
+      "id": "architecture_review",
+      "owner": "ai_reviewer",
+      "purpose": "Review command, architecture, and systemdesign consistency before implementation handoff.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": ["architecture_review_prompt"],
+      "outputs": [
+        ".claude/ai_plan_runs/<run_id>/architecture_review.json",
+        ".claude/ai_plan_runs/<run_id>/architecture_review.md"
+      ],
+      "type": "generative"
+    },
+    {
+      "id": "harness_review",
+      "owner": "ai_reviewer",
+      "purpose": "Review whether planned checks and evidence prove the intended behavior without fixture-specific overfitting.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": ["harness_review_prompt"],
+      "outputs": [
+        ".claude/ai_plan_runs/<run_id>/harness_review.json",
+        ".claude/ai_plan_runs/<run_id>/harness_review.md"
+      ],
+      "type": "generative"
+    },
+    {
+      "id": "llm_delegation_review",
+      "owner": "ai_reviewer",
+      "purpose": "Review semantic judgment and multi-agent decomposition choices so ambiguous decisions use explicit generative stages with bounded context.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": ["llm_delegation_review_prompt"],
+      "outputs": [
+        ".claude/ai_plan_runs/<run_id>/llm_delegation_review.json",
+        ".claude/ai_plan_runs/<run_id>/llm_delegation_review.md"
+      ],
+      "type": "generative"
+    },
+    {
+      "id": "feedback_ingest",
+      "owner": "script",
+      "purpose": "Validate review artifacts, trace references, scoped acceptance ids, and decision-surface policy before implementation handoff.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": [],
+      "outputs": [".claude/ai_plan_runs/<run_id>/plan_review_feedback.json"],
+      "type": "deterministic"
+    },
+    {
+      "id": "handoff_emit",
+      "owner": "script",
+      "purpose": "Emit machine-readable and human-readable `/ai-change` handoff artifacts with acceptance-source and acceptance-scope-file references.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": [],
+      "outputs": [
+        ".claude/ai_plan_runs/<run_id>/ai_change_handoff.json",
+        ".claude/ai_plan_runs/<run_id>/ai_change_handoff.md"
+      ],
+      "type": "deterministic"
+    },
+    {
+      "id": "status_resume",
+      "owner": "script",
+      "purpose": "Show planning run status without reopening unrelated planning or implementation context.",
+      "scripts": ["ai_plan_governance_cli"],
+      "prompts": [],
+      "outputs": [],
+      "type": "deterministic"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "ai_plan_governance_cli",
+      "file": ".claude/scripts/ai_plan_governance.py",
+      "purpose": "Create and validate `/ai-plan` run artifacts, enforce deterministic trace checks, and emit `/ai-change` handoff files. Template-derived projects may expose this same helper behind a local MCP adapter/server pair, but the helper remains deterministic and does not hide generative review work.",
+      "stage_ids": [
+        "intake",
+        "depth_classification",
+        "plan_trace_build",
+        "decision_surface_classification",
+        "architecture_review",
+        "harness_review",
+        "llm_delegation_review",
+        "feedback_ingest",
+        "handoff_emit",
+        "status_resume"
+      ],
+      "type": "deterministic",
+      "delegates_to": [],
+      "functions": [
+        {
+          "id": "autopilot_run",
+          "purpose": "Create a planning run and write the required artifact set for the selected planning depth.",
+          "type": "deterministic",
+          "inputs": [
+            {"name": "planning_request", "schema": "str | null"},
+            {"name": "plan_sources", "schema": "list[str]"},
+            {"name": "source_summary_file", "schema": "str | null"},
+            {"name": "depth", "schema": "enum:auto|minimal|standard|deep"},
+            {"name": "title", "schema": "str | null"}
+          ],
+          "outputs": [{"name": "run_manifest", "schema": "ai_plan_run_manifest"}]
+        },
+        {
+          "id": "validate_run",
+          "purpose": "Validate required files, unique trace ids, cross references, deep review artifacts, and decision-surface policy.",
+          "type": "deterministic",
+          "inputs": [{"name": "run_id", "schema": "str"}],
+          "outputs": [{"name": "validation_result", "schema": "ai_plan_validation_result"}]
+        },
+        {
+          "id": "handoff_run",
+          "purpose": "Print the machine-readable or human-readable `/ai-change` handoff for a run.",
+          "type": "deterministic",
+          "inputs": [{"name": "run_id", "schema": "str"}],
+          "outputs": [{"name": "handoff", "schema": "ai_plan_handoff"}]
+        },
+        {
+          "id": "status_run",
+          "purpose": "Show one planning run or the most recent active planning run.",
+          "type": "deterministic",
+          "inputs": [{"name": "run_id", "schema": "str | null"}],
+          "outputs": [{"name": "status", "schema": "ai_plan_run_manifest"}]
+        }
+      ]
+    }
+  ],
+  "local_mcp_backend_policy": "When a template-derived project turns `/ai-plan` into backend-backed command orchestration, use a command-side MCP client and local stdio MCP server that call the same deterministic helper functions. Architecture, harness, and LLM-delegation judgment remain explicit generative stages rather than nested Codex child-session transport.",
+  "prompt_contracts": [
+    {
+      "id": "depth_classification_prompt",
+      "purpose": "Classify planning depth with rationale and avoid deterministic substitutes for semantic ambiguity.",
+      "minimum_context": ["planning request", "source paths", "touched command/systemdesign surfaces"]
+    },
+    {
+      "id": "plan_trace_prompt",
+      "purpose": "Translate planning intent into stable requirement, decision, slice, acceptance, and evidence ids.",
+      "minimum_context": ["input summary", "repo architecture surfaces", "depth rationale"]
+    },
+    {
+      "id": "decision_surface_prompt",
+      "purpose": "Classify behavior decisions as deterministic, generative, or hybrid.",
+      "minimum_context": ["plan trace decisions", "owned implementation surfaces"]
+    },
+    {
+      "id": "architecture_review_prompt",
+      "purpose": "Review command and architecture consistency before implementation.",
+      "minimum_context": ["plan trace", "systemdesign index", "top-level command indexes"]
+    },
+    {
+      "id": "harness_review_prompt",
+      "purpose": "Review validation adequacy and overfitting risk.",
+      "minimum_context": ["acceptance scope", "required checks", "evidence paths"]
+    },
+    {
+      "id": "llm_delegation_review_prompt",
+      "purpose": "Review whether semantic judgment uses explicit generative stages with bounded context.",
+      "minimum_context": ["decision-surface inventory", "implementation slices"]
+    }
+  ],
+  "artifact_directory": ".claude/ai_plan_runs/<run_id>"
+}

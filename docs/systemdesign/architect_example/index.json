@@ -1,0 +1,52 @@
+{
+  "_note": "Replace 'example' with the command name. Copy this folder to architect_<commandname>/.",
+  "stages": [
+    {
+      "id": "stage_id",
+      "owner": "chat | terminal",
+      "purpose": "One-line description of what this stage does",
+      "scripts": ["script_id"],
+      "prompts": ["PROMPT_ID"],
+      "outputs": ["output_file.json"],
+      "type": "generative | deterministic"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script_id",
+      "file": ".claude/scripts/script_name.py",
+      "purpose": "One-line description",
+      "stage_ids": ["stage_id"],
+      "type": "generative | deterministic",
+      "delegates_to": [],
+      "functions": [
+        {
+          "id": "function_name",
+          "purpose": "One-line description",
+          "type": "generative | deterministic",
+          "inputs": [{"name": "param_name", "schema": "str | int | bool | list[str] | obj"}],
+          "outputs": [{"name": "return_name", "schema": "str"}]
+        }
+      ]
+    }
+  ],
+  "prompts": [
+    {
+      "id": "PROMPT_ID",
+      "script": "script_id",
+      "purpose": "One-line description",
+      "stage_ids": ["stage_id"],
+      "agent_type": "agent_role_name | null",
+      "type": "generative",
+      "inputs": ["param1", "param2"],
+      "context_loaded": [
+        {
+          "artifact": "path/to/file.json",
+          "how": "param_inject | path_ref | file_read",
+          "role": "why this artifact is loaded"
+        }
+      ],
+      "outputs": ["output_file.md"]
+    }
+  ]
+}

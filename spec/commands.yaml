@@ -1,0 +1,9 @@
+commands:
+  - name: /ai-change
+    category: governance
+    purpose: Run git/local-review governance for AI-assisted state-changing work
+    aliases: []
+  - name: /ai-plan
+    category: governance
+    purpose: Plan non-trivial AI-assisted changes before implementation handoff
+    aliases: []

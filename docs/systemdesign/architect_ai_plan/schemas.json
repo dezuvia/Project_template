@@ -1,0 +1,123 @@
+{
+  "ai_plan_run_manifest": {
+    "description": "Persistent control-plane state for one planning run.",
+    "fields": {
+      "run_id": "str",
+      "title": "str",
+      "status": "enum:active|validated|validation_failed",
+      "source_mode": "enum:request|conversation|plan_source|mixed",
+      "requested_depth": "enum:auto|minimal|standard|deep",
+      "depth": "enum:minimal|standard|deep",
+      "depth_rationale": "str",
+      "depth_classification_method": "str",
+      "source_paths": "list[str]",
+      "reviewed_repo_root": "str",
+      "generated_artifact_paths": "list[str]",
+      "created_at": "iso8601",
+      "updated_at": "iso8601"
+    }
+  },
+  "ai_plan_trace": {
+    "description": "Traceability surface linking planning intent to implementation and validation.",
+    "fields": {
+      "run_id": "str",
+      "requirements": "list[ai_plan_requirement]",
+      "decisions": "list[ai_plan_decision]",
+      "risks": "list[ai_plan_risk]",
+      "implementation_slices": "list[ai_plan_slice]",
+      "acceptance_requirements": "list[ai_plan_acceptance_requirement]"
+    }
+  },
+  "ai_plan_requirement": {
+    "description": "One traceable plan requirement.",
+    "fields": {
+      "id": "str",
+      "kind": "enum:requirement",
+      "source": "str",
+      "claim": "str",
+      "root_cause": "str",
+      "architecture_surfaces": "list[str]",
+      "decision_surface": "enum:deterministic|generative|hybrid",
+      "implementation_slice_ids": "list[str]",
+      "acceptance_requirement_ids": "list[str]",
+      "harness_evidence": "list[str]",
+      "status": "enum:planned|blocked|complete"
+    }
+  },
+  "ai_plan_decision": {
+    "description": "Behavior decision that must be assigned to deterministic, generative, or hybrid handling.",
+    "fields": {
+      "id": "str",
+      "description": "str",
+      "decision_surface": "enum:deterministic|generative|hybrid",
+      "implementation_owner": "enum:script|chat|planner|ai_reviewer|ai_change",
+      "implementation_mode": "enum:deterministic|generative|hybrid",
+      "safety_justification": "str | null"
+    }
+  },
+  "ai_plan_slice": {
+    "description": "Suggested implementation slice for `/ai-change`.",
+    "fields": {
+      "id": "str",
+      "title": "str",
+      "owned_surfaces": "list[str]",
+      "depends_on": "list[str]",
+      "ai_change_task_summary": "str",
+      "acceptance_requirement_ids": "list[str]",
+      "required_checks": "list[str]",
+      "review_risk": "enum:low|medium|high",
+      "stop_conditions": "list[str]"
+    }
+  },
+  "ai_plan_acceptance_scope": {
+    "description": "Scoped acceptance file consumed by `/ai-change --acceptance-scope-file`.",
+    "fields": {
+      "run_id": "str",
+      "requirements": "list[ai_plan_scoped_acceptance_requirement]"
+    }
+  },
+  "ai_plan_scoped_acceptance_requirement": {
+    "description": "One approval-blocking acceptance requirement for implementation review.",
+    "fields": {
+      "requirement_id": "str",
+      "trace_requirement_ids": "list[str]",
+      "description": "str",
+      "requirement_text": "str",
+      "evidence_type": "enum:assertion|artifact|command|review",
+      "required_artifact_paths": "list[str]",
+      "command_text": "str | null",
+      "approval_blocking": "bool"
+    }
+  },
+  "ai_plan_review_artifact": {
+    "description": "Planning review lane artifact for deep mode.",
+    "fields": {
+      "run_id": "str",
+      "review_lane": "enum:architecture|harness|llm_delegation",
+      "review_result": "enum:pass|pass_with_advisories|changes_requested",
+      "blocking_findings_count": "int",
+      "findings": "list[obj]",
+      "summary": "str",
+      "generated_at": "iso8601"
+    }
+  },
+  "ai_plan_handoff": {
+    "description": "`/ai-change` handoff emitted by a planning run.",
+    "fields": {
+      "run_id": "str",
+      "acceptance_sources": "list[str]",
+      "acceptance_scope_file": "str",
+      "slices": "list[ai_plan_slice]",
+      "commands": "list[str]"
+    }
+  },
+  "ai_plan_validation_result": {
+    "description": "Validation result for one planning run.",
+    "fields": {
+      "run_id": "str",
+      "status": "enum:pass|fail",
+      "errors": "list[str]",
+      "warnings": "list[str]"
+    }
+  }
+}
