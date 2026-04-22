@@ -53,18 +53,47 @@ git add .
 git commit -m "Initialize project from template"
 ```
 
+### 一般使用方式
+
+一般使用者主要只需要 `autopilot`。其他子命令是進階操作，通常只在恢復中斷流程、除錯治理狀態、或手動控制每個 checkpoint 時才需要。
+
+建議流程：
+
+```text
+/ai-plan autopilot "<describe the change you want>"
+```
+
+`/ai-plan autopilot` 會產生 scoped acceptance 與 `/ai-change` handoff。接著照 handoff 使用：
+
+```text
+/ai-change autopilot "<slice task summary>" --acceptance-source <plan-source> --acceptance-scope-file .claude/ai_plan_runs/<run_id>/acceptance_scope.json
+```
+
+如果是很小、很明確、沒有 durable planning 需求的修改，可以直接使用：
+
+```text
+/ai-change autopilot "<change summary>"
+```
+
 ### 使用 `/ai-plan`
 
 `/ai-plan` 是非瑣碎 AI-assisted implementation 前的 planning router。它會建立 durable plan trace、decision-surface inventory、scoped acceptance、required checks、open policy questions，並輸出 `/ai-change` handoff artifacts。
 
-常用流程：
+主要 user-facing 指令：
 
 ```text
 /ai-plan autopilot "<planning request>"
+```
+
+進階指令：
+
+```text
 /ai-plan autopilot --plan-source <path ...> --title "<title>"
 /ai-plan validate --run-id <id>
 /ai-plan handoff --run-id <id>
 ```
+
+`validate` 和 `handoff` 主要給 agents、恢復流程、或手動檢查 planning artifacts 使用；一般使用者通常只需要 `autopilot`。
 
 詳細政策請看 `docs/ai_plan_governance.md`，命令細節請看 `.claude/commands/ai-plan.md`，architecture contract 請看 `docs/systemdesign/architect_ai_plan/`。
 
@@ -72,7 +101,15 @@ git commit -m "Initialize project from template"
 
 `/ai-change` 是 AI-assisted state-changing work 的治理入口。它會把變更綁定到真實 git branch，建立 checkpoint commit，產生 local branch-diff review bundle，並在 medium/high-risk approval 前要求獨立 AI review。
 
-常用流程：
+主要 user-facing 指令：
+
+```text
+/ai-change autopilot "<task summary>"
+```
+
+`autopilot` 會在同一個治理 run 中循環處理 implementation、checkpoint、ready-for-review、independent review、review-feedback、以及下一步判斷。一般使用者不需要手動串下面這些子命令。
+
+進階指令：
 
 ```text
 /ai-change start-run --task-summary "<change summary>"
@@ -81,6 +118,8 @@ git commit -m "Initialize project from template"
 /ai-change independent-review --run-id <id>
 /ai-change review-feedback --run-id <id> --review-result <state>
 ```
+
+進階指令適合用在手動控制 checkpoint、修復中斷 run、重跑 review、或除錯 governance artifact。
 
 詳細政策請看 `docs/ai_change_governance.md`，命令細節請看 `.claude/commands/ai-change.md`。
 
@@ -148,18 +187,47 @@ git add .
 git commit -m "Initialize project from template"
 ```
 
+### Normal Usage
+
+Most users should use `autopilot` first. The other subcommands are advanced controls for resuming interrupted runs, debugging governance state, or manually controlling each checkpoint.
+
+Recommended flow:
+
+```text
+/ai-plan autopilot "<describe the change you want>"
+```
+
+`/ai-plan autopilot` emits scoped acceptance and an `/ai-change` handoff. Then follow that handoff:
+
+```text
+/ai-change autopilot "<slice task summary>" --acceptance-source <plan-source> --acceptance-scope-file .claude/ai_plan_runs/<run_id>/acceptance_scope.json
+```
+
+For very small, obvious changes that do not need durable planning, use:
+
+```text
+/ai-change autopilot "<change summary>"
+```
+
 ### Using `/ai-plan`
 
 `/ai-plan` is the planning router before non-trivial AI-assisted implementation. It creates durable plan trace, decision-surface inventory, scoped acceptance, required checks, open policy questions, and `/ai-change` handoff artifacts.
 
-Common flow:
+Primary user-facing command:
 
 ```text
 /ai-plan autopilot "<planning request>"
+```
+
+Advanced commands:
+
+```text
 /ai-plan autopilot --plan-source <path ...> --title "<title>"
 /ai-plan validate --run-id <id>
 /ai-plan handoff --run-id <id>
 ```
+
+`validate` and `handoff` are mainly for agents, resumed workflows, or manual artifact checks. Most users only need `autopilot`.
 
 For policy details, read `docs/ai_plan_governance.md`. For command details, read `.claude/commands/ai-plan.md`. For the architecture contract, read `docs/systemdesign/architect_ai_plan/`.
 
@@ -167,7 +235,15 @@ For policy details, read `docs/ai_plan_governance.md`. For command details, read
 
 `/ai-change` is the governance entrypoint for AI-assisted state-changing work. It binds the work to a real git branch, records checkpoint commits, creates local branch-diff review bundles, and requires independent AI review before medium/high-risk approval is persisted.
 
-Common flow:
+Primary user-facing command:
+
+```text
+/ai-change autopilot "<task summary>"
+```
+
+`autopilot` keeps implementation, checkpoint, ready-for-review, independent review, review-feedback, and next-step selection inside one governance run. Most users do not need to manually chain the subcommands below.
+
+Advanced commands:
 
 ```text
 /ai-change start-run --task-summary "<change summary>"
@@ -176,6 +252,8 @@ Common flow:
 /ai-change independent-review --run-id <id>
 /ai-change review-feedback --run-id <id> --review-result <state>
 ```
+
+Use advanced commands when manually controlling checkpoints, repairing an interrupted run, rerunning review, or debugging governance artifacts.
 
 For policy details, read `docs/ai_change_governance.md`. For command details, read `.claude/commands/ai-change.md`.
 
