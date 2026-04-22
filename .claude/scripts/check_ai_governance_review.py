@@ -20,7 +20,7 @@ from batch_llm_runner import build_runner_command, select_runner_profile
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PROVIDER = "codex"
 DEFAULT_TIMEOUT_SECONDS = 90
-DEFAULT_REAL_CODEX = "/Users/chia-shuotang/.local/bin/codex"
+DEFAULT_REAL_CODEX = os.environ.get("CODEX_REAL_BINARY", "")
 RULES_PATH = REPO_ROOT / "docs" / "governance-review-contract.md"
 
 GOVERNANCE_SENSITIVE_EXACT_PATHS = {
@@ -30,16 +30,9 @@ GOVERNANCE_SENSITIVE_EXACT_PATHS = {
     "docs/governance-review-contract.md",
     ".githooks/pre-commit",
     ".githooks/pre-push",
-    ".claude/agents/scv.md",
-    ".claude/commands/scv.md",
     ".claude/scripts/check_ai_governance_review.py",
     ".claude/scripts/check_architecture_sync.py",
     ".claude/scripts/check_governance_layering.py",
-    ".claude/scripts/check_scv_contract.py",
-    ".claude/scripts/scv_create.py",
-    ".claude/scripts/scv_governance.py",
-    ".claude/scripts/scv_mcp_server.py",
-    ".claude/scripts/scv_mcp_client.py",
 }
 
 GOVERNANCE_SENSITIVE_GLOBS = [
@@ -56,16 +49,9 @@ BLOCKING_EXACT_PATHS = {
     "docs/governance-review-contract.md",
     ".githooks/pre-commit",
     ".githooks/pre-push",
-    ".claude/agents/scv.md",
-    ".claude/commands/scv.md",
     ".claude/scripts/check_ai_governance_review.py",
     ".claude/scripts/check_architecture_sync.py",
     ".claude/scripts/check_governance_layering.py",
-    ".claude/scripts/check_scv_contract.py",
-    ".claude/scripts/scv_create.py",
-    ".claude/scripts/scv_governance.py",
-    ".claude/scripts/scv_mcp_server.py",
-    ".claude/scripts/scv_mcp_client.py",
 }
 
 BLOCKING_GLOBS = [
@@ -152,63 +138,6 @@ def trim_diff_text(diff_text: str, max_lines: int = 160) -> str:
     return "\n".join(head + ["... diff truncated for token discipline ..."] + tail).strip()
 
 
-def compact_scv_summary(path: Path | None) -> str:
-    if path is None or not path.exists():
-        return "No SCV contract summary available."
-    lines = path.read_text(encoding="utf-8").splitlines()
-    kept: list[str] = []
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith("# ") or stripped.startswith("- created_at:") or stripped.startswith("- status:"):
-            kept.append(stripped)
-        elif stripped.startswith("## ") and stripped in {
-            "## Request",
-            "## Intent",
-            "## Inferred Metadata",
-            "## AI Governance Review",
-            "## Override Justification",
-        }:
-            kept.append(stripped)
-        elif stripped.startswith("- ") and len(kept) >= 1:
-            kept.append(stripped)
-        if len(kept) >= 24:
-            break
-    return "\n".join(kept) if kept else "SCV contract exists but compact summary could not be built."
-
-
-def parse_override_justification(text: str) -> str:
-    match = re.search(
-        r"^## Override Justification\s*\n(?P<body>.*?)(?=^## |\Z)",
-        text,
-        flags=re.MULTILINE | re.DOTALL,
-    )
-    if not match:
-        return ""
-    body = match.group("body").strip()
-    if not body:
-        return ""
-    normalized = re.sub(r"^-+\s*", "", body, flags=re.MULTILINE).strip()
-    if normalized.lower() in {"none.", "none", "n/a", "not needed", "not required"}:
-        return ""
-    return normalized
-
-
-def current_override_for_changed_contracts(changed_files: list[str]) -> str:
-    overrides: list[str] = []
-    for rel_path in changed_files:
-        if not rel_path.startswith(".scv/") or not rel_path.endswith(".md"):
-            continue
-        abs_path = REPO_ROOT / rel_path
-        if not abs_path.exists():
-            continue
-        override = parse_override_justification(abs_path.read_text(encoding="utf-8"))
-        if override:
-            overrides.append(override)
-    return "\n".join(overrides).strip()
-
-
 def extract_json_object(raw_output: str) -> dict[str, Any]:
     raw_output = raw_output.strip()
     if not raw_output:
@@ -254,12 +183,11 @@ def prompt_for_review(
     changed_files: list[str],
     scoped_files: list[str],
     rule_text: str,
-    scv_summary: str,
     diff_bundle: str,
     review_mode: str,
 ) -> str:
     return (
-        "You are reviewing a ScrapeCrab governance-sensitive change.\n"
+        "You are reviewing a project-template governance-sensitive change.\n"
         "Judge only architecture/governance layering and command-contract disruption.\n"
         "Be concise and diff-first. Do not ask for more files unless essential.\n"
         "If the change is ordinary implementation work outside the governance-sensitive scope, mark advisory/pass.\n\n"
@@ -283,7 +211,6 @@ def prompt_for_review(
         f"All changed files:\n{json.dumps(changed_files, ensure_ascii=False, indent=2)}\n\n"
         f"Governance-sensitive files:\n{json.dumps(scoped_files, ensure_ascii=False, indent=2)}\n\n"
         f"Compact governance rules:\n{rule_text}\n\n"
-        f"Compact SCV summary:\n{scv_summary}\n\n"
         f"Scoped diffs:\n{diff_bundle}\n"
     )
 
@@ -313,7 +240,7 @@ def run_ai_review(
         "check": False,
     }
     if provider == "codex":
-        if Path(DEFAULT_REAL_CODEX).exists():
+        if DEFAULT_REAL_CODEX and Path(DEFAULT_REAL_CODEX).exists():
             cmd[0] = DEFAULT_REAL_CODEX
         child_env["CODEX_NOTIFY_DISABLE"] = "1"
         child_env.setdefault("CODEX_NOTIFY_LOG", "/tmp/codex-notify.log")
@@ -351,7 +278,7 @@ def run_ai_review(
     return validate_ai_payload(extract_json_object(raw_output))
 
 
-def evaluate_override(payload: dict[str, Any], *, review_mode: str, override_text: str) -> tuple[bool, str]:
+def evaluate_override(payload: dict[str, Any], *, review_mode: str) -> tuple[bool, str]:
     blocking_finding = any(
         finding.get("severity") == "blocking" and finding.get("type") in FINDING_BLOCKING_TYPES
         for finding in payload.get("findings", [])
@@ -359,9 +286,7 @@ def evaluate_override(payload: dict[str, Any], *, review_mode: str, override_tex
     blocking_status = payload.get("status") == "block" or payload.get("severity") == "blocking" or blocking_finding
     if review_mode != "blocking" or not blocking_status:
         return True, "AI governance review passed."
-    if override_text:
-        return True, "AI governance review reported a blocking concern, but an SCV override justification is present."
-    return False, "AI governance review found a blocking governance concern and no SCV override justification was recorded."
+    return False, "AI governance review found a blocking governance concern."
 
 
 def main() -> int:
@@ -371,7 +296,6 @@ def main() -> int:
     parser.add_argument("--provider", default=DEFAULT_PROVIDER, help="AI review provider.")
     parser.add_argument("--model", help="Optional AI review model override.")
     parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS)
-    parser.add_argument("--scv-path", help="Optional active SCV contract path.")
     parser.add_argument("--json", action="store_true", help="Emit JSON summary.")
     args = parser.parse_args()
 
@@ -402,10 +326,8 @@ def main() -> int:
             print("AI governance review passed: no governance-sensitive files changed.")
         return 0
 
-    scv_path = (REPO_ROOT / args.scv_path).resolve() if args.scv_path else None
     review_mode = "blocking" if requires_blocking_gate(scoped_files) else "advisory"
     rule_text = RULES_PATH.read_text(encoding="utf-8").strip()
-    scv_summary = compact_scv_summary(scv_path)
     diff_parts: list[str] = []
     for rel_path in scoped_files[:10]:
         diff_text = collect_diff_text(rel_path, args.base_ref, args.staged)
@@ -416,7 +338,6 @@ def main() -> int:
         changed_files=changed_files,
         scoped_files=scoped_files,
         rule_text=rule_text,
-        scv_summary=scv_summary,
         diff_bundle=diff_bundle,
         review_mode=review_mode,
     )
@@ -435,11 +356,9 @@ def main() -> int:
     payload["scoped_files"] = scoped_files
     payload["provider"] = args.provider.strip().lower()
     payload["model"] = args.model or ""
-    override_text = current_override_for_changed_contracts(changed_files)
-    ok, message = evaluate_override(payload, review_mode=review_mode, override_text=override_text)
+    ok, message = evaluate_override(payload, review_mode=review_mode)
 
     if args.json:
-        payload["override_applied"] = bool(override_text and ok and review_mode == "blocking")
         payload["result_message"] = message
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:

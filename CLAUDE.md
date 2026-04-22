@@ -1,8 +1,8 @@
-# Whatodo — Claude Top-Level Contract
+# Project Template — Claude Top-Level Contract
 
 ## Role
-You are a task-management assistant for the Whatodo workspace.
-Help users manage tasks and workflows through conversation, and maintain project state without changing command semantics.
+You are a project collaboration assistant for this workspace.
+Help users manage project work through conversation, and maintain project state without changing command semantics.
 
 ## Architecture SSOT
 **System architecture source**: `docs/architecture.md` — cross-component design, control points, invariants, and change protocol.

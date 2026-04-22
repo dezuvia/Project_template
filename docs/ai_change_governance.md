@@ -112,8 +112,9 @@ artifact envelope, and blocks stale or self-authored approval persistence.
 The JSON artifact records the reviewed head commit, changed paths, provider,
 model, prompt version, implementer identity/session, reviewer identity/session,
 review result, finding counts, contract-sufficiency assessment, overfitting
-assessment, and policy-substitution assessment. High-risk `/research` changes
-also require shared-branching and architecture-sync audit answers.
+assessment, and policy-substitution assessment. Derived projects may define
+additional high-risk review fields for domain-specific and architecture-sync
+audit answers.
 For medium/high-risk approval, the run manifest and review artifact must carry
 known, distinct implementer and reviewer identity/session values; unknown
 identity is treated as insufficient separation. Existing run manifests must not
@@ -153,8 +154,8 @@ Acceptance-source metadata changes the local review contract in four ways:
 - explicitly scoped bullets or checklist entries become machine-readable
   approval-blocking acceptance requirements
 - any named artifact or comparator path from scoped requirements becomes
-  required review evidence even if it lives under a normally excluded surface
-  such as `research/**`; unscoped imported paths remain audit context
+  required review evidence even if it lives under a normally excluded generated
+  output surface; unscoped imported paths remain audit context
 - the approval blocking point is the `review-feedback` writeback: it must not
   persist `approved` or `approved_with_advisories` for the reviewed head commit
   while scoped required acceptance evidence is still `missing` or `fail`
@@ -243,12 +244,12 @@ In this repo they should usually reduce to:
 - implementer and reviewer identity/session must be known and distinct when
   persisting medium/high-risk approval
 - targeted regression checks when the touched surface warrants them and the derived project defines those checks
-- `/research` overlays only when touched paths actually hit shared `/research`
-  runtime, contract, workflow, or architecture surfaces
+- optional domain-specific overlays only when a derived project explicitly
+  defines them and the touched paths hit those registered surfaces
 - the default review read surface stays bounded: `docs/legacy/**` and bulk
-  generated `research/**` artifacts are summarized in review guidance rather
-  than loaded by default unless a live doc, active contract failure, concrete
-  finding, or explicit acceptance-source requirement points there
+  generated artifacts are summarized in review guidance rather than loaded by
+  default unless a live doc, active contract failure, concrete finding, or
+  explicit acceptance-source requirement points there
 - `review-feedback` must block approval persistence when scoped acceptance
   requirements still have evidence status `missing` or `fail`; in strict mode,
   every imported acceptance-source requirement is scoped for blocking
@@ -269,8 +270,9 @@ future cleanup stay advisory.
 - local branch review is required before merge
 
 `high`
-- shared `/research` runtime, workflow, command-contract, or architecture edits
-- local branch review plus independent audit expectations still apply
+- explicit high-risk surfaces defined by the derived project
+- local branch review plus independent audit expectations still apply when a
+  derived project registers high-risk surfaces
 
 ## Usage
 
@@ -363,13 +365,13 @@ Example acceptance evidence file:
     {
       "requirement_id": "docs-live-plan-md-01",
       "status": "pass",
-      "reviewed_artifact_paths": ["research/demo/output.md"]
+      "reviewed_artifact_paths": ["artifacts/demo/output.md"]
     },
     {
       "requirement_id": "docs-live-plan-md-02",
       "status": "pass",
       "reviewed_artifact_paths": ["docs/example.md"],
-      "comparator_basis": "research/gold/output_claude.md"
+      "comparator_basis": "artifacts/gold/output.md"
     }
   ]
 }

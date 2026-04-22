@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Any
 
 import check_architecture_sync
-import check_research_contract
 from batch_llm_runner import (
     CODEX_CHILD_NETWORK_ALLOWED_ENV,
     build_runner_command,
@@ -36,41 +35,26 @@ BASE_READ_SURFACE = (
     "docs/ai_change_governance.md",
     "docs/architecture.md",
 )
-RESEARCH_READ_SURFACE = (
-    "docs/research-current.md",
-    "docs/systemdesign/architect_research/index.json",
-    "fixlog_research.md",
-)
 ARCHITECTURE_SYNC_DOCS = {
     "docs/architecture.md",
-    "docs/research-current.md",
-    "docs/systemdesign/architect_research/index.json",
-    "docs/systemdesign/architect_research/gate_registry.json",
 }
 GOVERNANCE_SURFACES = {
     "AGENTS.md",
     "CLAUDE.md",
     "docs/coder_guide.md",
     "docs/architecture.md",
-    "docs/research-current.md",
-    "fixlog_research.md",
     "docs/ai_change_governance.md",
 }
 WORKFLOW_SURFACES = {
     ".claude/commands/",
     ".claude/scripts/",
     "docs/systemdesign/architect_ai_change/",
-    "docs/systemdesign/architect_research/",
 }
 TEST_COMMANDS = {
     "ai_change_governance": ["python3", "-m", "unittest", "tests.test_ai_change_governance"],
     "ai_change_flow": ["python3", "-m", "unittest", "tests.test_ai_change_pr_flow"],
     "ai_change_hook_guard": ["python3", "-m", "unittest", "tests.test_ai_change_hook_guard"],
-    "research_governance": ["python3", "-m", "unittest", "tests.test_research_governance_repairs"],
-    "research_audit": ["python3", "-m", "unittest", "tests.test_research_audit_repairs"],
-    "research_prompt": ["python3", "-m", "unittest", "tests.test_research_prompt_repairs"],
     "review_cycle": ["python3", "-m", "unittest", "tests.test_review_cycle_repairs"],
-    "canvas_contracts": ["python3", "-m", "unittest", "tests.test_research_canvas_contracts"],
 }
 DEFAULT_WORKFLOW_MODE = "git_local_review"
 DEFAULT_REVIEW_TRANSPORT = "local_branch_diff"
@@ -99,7 +83,7 @@ INDEPENDENT_REVIEW_BASE_ASSESSMENT_FIELDS = (
     "policy_substitution_assessment",
 )
 INDEPENDENT_REVIEW_HIGH_RISK_ASSESSMENT_FIELDS = (
-    "shared_branching_assessment",
+    "high_risk_assessment",
     "architecture_sync_assessment",
 )
 LEGACY_WORKFLOW_MODE = "git_pr_assisted"
@@ -177,12 +161,6 @@ REVIEW_RULE_SOURCES = {
 }
 GENERAL_REVIEW_SCOPE = "general_code_review"
 RELATED_CONTEXT_POLICY = "bounded_related_context"
-RESEARCH_OVERLAY_TAGS = {
-    "research_runtime",
-    "research_contract",
-    "research_command_contract",
-    "research_workflow",
-}
 SUBCOMMANDS = {
     "autopilot",
     "independent-review",
@@ -1665,28 +1643,16 @@ def classify_path_tags(path: str) -> set[str]:
         tags.add("governance")
     if _has_prefix(path, WORKFLOW_SURFACES):
         tags.add("workflow")
-    if path.startswith(".claude/scripts/research_"):
-        tags.add("research_runtime")
     if path.startswith(".claude/scripts/check_") or path == ".claude/scripts/ai_change_governance.py":
         tags.add("governance_tooling")
     if path == ".claude/commands/ai-change.md":
         tags.add("governance_tooling")
     if path.startswith(".claude/commands/"):
         tags.add("command_contract")
-    if path == ".claude/commands/research.md":
-        tags.add("research_command_contract")
     if path.startswith(".claude/agents/"):
         tags.add("workflow")
-    if path.startswith(".claude/agents/research"):
-        tags.add("research_workflow")
-    if path.startswith("docs/systemdesign/architect_research/"):
-        tags.add("research_contract")
     if path in ARCHITECTURE_SYNC_DOCS:
         tags.add("architecture_sync_doc")
-    if path == "fixlog_research.md":
-        tags.add("fixlog")
-    if path.startswith("canvas/") or "canvas" in Path(path).name:
-        tags.add("canvas")
     return tags
 
 
@@ -1698,25 +1664,16 @@ def _is_code_or_workflow_surface(path: str) -> bool:
         "CLAUDE.md",
         "docs/coder_guide.md",
         "docs/architecture.md",
-        "docs/research-current.md",
         "docs/ai_change_governance.md",
     }
 
 
-def _has_research_overlay(tags: set[str]) -> bool:
-    return any(tag in tags for tag in RESEARCH_OVERLAY_TAGS)
-
-
 def _domain_overlays(tags: set[str]) -> list[str]:
-    overlays: list[str] = []
-    if _has_research_overlay(tags):
-        overlays.append("research")
-    return overlays
+    del tags
+    return []
 
 
 def _risk_tier(tags: set[str], paths: list[str]) -> str:
-    if _has_research_overlay(tags):
-        return "high"
     if any(tag in tags for tag in ("governance", "governance_tooling", "workflow", "command_contract")):
         return "medium"
     if paths and all("tests" in classify_path_tags(path) or "docs" in classify_path_tags(path) for path in paths):
@@ -1733,9 +1690,8 @@ def _review_policy(risk_tier: str) -> str:
 
 
 def _read_surface(tags: set[str], acceptance_sources: list[str]) -> list[str]:
+    del tags
     surface = list(BASE_READ_SURFACE)
-    if _has_research_overlay(tags):
-        surface.extend(RESEARCH_READ_SURFACE)
     surface.extend(acceptance_sources)
     deduped: list[str] = []
     for path in surface:
@@ -1748,8 +1704,6 @@ def _read_surface(tags: set[str], acceptance_sources: list[str]) -> list[str]:
 def _default_read_surface_exclusion_label(path: str) -> str:
     if path.startswith("docs/legacy/"):
         return "docs/legacy/**"
-    if path.startswith("research/"):
-        return "research/**"
     return ""
 
 
@@ -1800,12 +1754,6 @@ def _hard_requirements(
         requirements.append(
             "Install the repo-managed git push guard with `git config core.hooksPath .githooks` so direct pushes to `main` are blocked locally when GitHub branch protection is unavailable."
         )
-    if _has_research_overlay(tags):
-        requirements.append(
-            "State `case_class`, `input_contract_root_cause`, `shared_branching_check`, and `architecture_sync` before changing `/research` behavior."
-        )
-    if "research_runtime" in tags and not any(path in ARCHITECTURE_SYNC_DOCS for path in paths):
-        requirements.append("Sync runtime behavior with architecture SSOT in the same change.")
     if "governance_tooling" in tags:
         requirements.append("Keep governance automation lightweight: only concrete hard failures should block submission.")
     if acceptance_sources:
@@ -1832,8 +1780,6 @@ def _advisory_notes(tags: set[str], risk_tier: str) -> list[str]:
     ]
     if risk_tier != "low":
         notes.append("Complete the local branch-diff review before merge.")
-    if _has_research_overlay(tags):
-        notes.append("Apply `/research` overlays only to touched `/research` surfaces; do not widen them into a repo-wide audit.")
     if risk_tier == "high":
         notes.append("Run an independent audit lane that looks for contract drift, overfitting, and missing architecture sync.")
     return notes
@@ -1851,13 +1797,6 @@ def _validation_commands(tags: set[str]) -> list[str]:
     command_keys: list[str] = []
     if any(tag in tags for tag in ("governance", "governance_tooling", "command_contract")):
         command_keys.extend(["ai_change_governance", "ai_change_flow", "ai_change_hook_guard"])
-    if _has_research_overlay(tags):
-        command_keys.append("research_governance")
-    if "research_runtime" in tags:
-        command_keys.extend(["research_audit", "research_prompt", "review_cycle"])
-    if "canvas" in tags:
-        command_keys.append("canvas_contracts")
-
     deduped: list[str] = []
     for key in command_keys:
         if not _test_command_available(key):
@@ -1887,8 +1826,6 @@ def _verification_expectations(
         expectations.append("If behavior changed without proportional targeted verification or another concrete artifact, raise a finding.")
     else:
         expectations.append("Docs/tests-only changes may use lightweight verification when no behavior changed.")
-    if _has_research_overlay(tags):
-        expectations.append("Treat `/research` overlays as additive checks on top of the default code-review pass.")
     if acceptance_requirements:
         expectations.append(
             "Review scoped acceptance requirements and record machine-readable evidence with `status=pass|fail|missing`, reviewed artifact paths, and comparator basis where applicable."
@@ -1972,8 +1909,8 @@ def _audit_brief(paths: list[str], read_surface: list[str]) -> str:
     lines.extend(_default_read_surface_guidance(paths, read_surface))
     lines.extend(
         [
-        "- This audit is an additive `/research` overlay layered on top of the default local review path.",
-        "- Check contract/doc sync, shared-branching neutrality, fixlog coverage, and test proportionality.",
+        "- This audit is an additive high-risk review layered on top of the default local review path.",
+        "- Check contract/doc sync, architecture alignment, and test proportionality.",
         "- Apply `docs/coder_guide.md` and check high-level architecture alignment before reviewing implementation style.",
         "- Challenge contract sufficiency, overfitting, policy substitutions, and design-intent/function mismatch.",
         "- Distinguish hard failures from advisory concerns; do not turn heuristics into blockers.",
@@ -2067,7 +2004,7 @@ def analyze_change(
             required_acceptance_artifacts,
             approval_blocking_policy,
         ),
-        audit_brief=_audit_brief(normalized, read_surface) if _has_research_overlay(tags) else None,
+        audit_brief=_audit_brief(normalized, read_surface) if risk_tier == "high" else None,
         checks=checks,
     )
 
@@ -2104,24 +2041,6 @@ def evaluate_hard_checks(paths: list[str], tags: set[str]) -> list[CheckResult]:
                     else f"git `core.hooksPath` currently points to `{git_context.hooks_path}`"
                 )
             checks.append(CheckResult(name="main_push_guard", status="fail", details=details))
-    if "research_runtime" in tags:
-        details = check_architecture_sync.architecture_sync_errors(paths)
-        checks.append(
-            CheckResult(
-                name="architecture_sync",
-                status="pass" if not details else "fail",
-                details=details,
-            )
-        )
-        lint_paths = [path for path in paths if path.startswith(".claude/scripts/")]
-        lint_details = check_research_contract.lint_shared_research_contract(lint_paths or paths)
-        checks.append(
-            CheckResult(
-                name="shared_branching_lint",
-                status="pass" if not lint_details else "fail",
-                details=lint_details,
-            )
-        )
     return checks
 
 
@@ -2684,10 +2603,10 @@ def _render_independent_review_markdown(payload: dict[str, Any]) -> str:
         f"- Overfitting: {payload.get('overfitting_assessment', '')}",
         f"- Policy substitution: {payload.get('policy_substitution_assessment', '')}",
     ]
-    if payload.get("shared_branching_assessment") or payload.get("architecture_sync_assessment"):
+    if payload.get("high_risk_assessment") or payload.get("architecture_sync_assessment"):
         lines.extend(
             [
-                f"- Shared branching: {payload.get('shared_branching_assessment', '')}",
+                f"- High-risk assessment: {payload.get('high_risk_assessment', '')}",
                 f"- Architecture sync: {payload.get('architecture_sync_assessment', '')}",
             ]
         )
@@ -2789,7 +2708,7 @@ def _render_independent_review_prompt(
         "Explicitly challenge contract sufficiency, overfitting to tests or artifact-family wording, and policy substitutions where bookkeeping replaces the real workflow boundary.\n"
         "Critically examine whether the code translates design intention into function; for example, if a function is meant to compress data for decision making, its output must not remain about the same size as the input.\n"
         "Do not report hidden chain-of-thought; provide concise evidence, file references, and the required structured fields.\n"
-        "For high-risk `/research` changes, also assess shared-branching neutrality and architecture sync.\n\n"
+        "For high-risk changes, also assess domain-specific contract risk and architecture sync.\n\n"
         "</instructions>\n\n"
         "<output_schema>\n"
         "Write valid JSON matching this shape, then a concise markdown summary with the same result:\n"

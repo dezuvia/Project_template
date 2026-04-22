@@ -1,6 +1,6 @@
-# Whatodo Architecture (SSOT)
+# Project Template Architecture (SSOT)
 
-Last updated: 2026-04-22 (template-ai-plan-governance)
+Last updated: 2026-04-22 (template-contamination-cleanup)
 
 ## Traceability Read Window
 - New per-change traceability lives in `.claude/ai_change_runs/` review artifacts and branch commits.
@@ -21,6 +21,13 @@ Last updated: 2026-04-22 (template-ai-plan-governance)
 - Layers touched: policy (`AGENTS.md`, `CLAUDE.md`), command docs (`.claude/commands/ai-plan.md`), scripts (`.claude/scripts/ai_plan_governance.py`), docs (`docs/ai_plan_governance.md`, `docs/architecture.md`, `docs/coder_guide.md`, `CommandGuide.md`), command spec (`spec/commands.yaml`), and systemdesign (`docs/systemdesign/architect_ai_plan/*`).
 - Human checkpoints impacted: deep planning requires architecture, harness, and LLM-delegation review artifacts before final handoff; implementation approval still belongs to `/ai-change`.
 - Verification: command index rendering, command SSOT checks, JSON validation, and template static checks when the template is initialized as a real git repository.
+
+### Traceability record — 2026-04-22 (template-contamination-cleanup)
+- Intent: Remove project-specific leftovers from the reusable template and keep only template-generic governance behavior.
+- Commands affected: `/ai-change` governance classification and review prompts; `/ai-plan` planning artifacts remain ignored per project.
+- Layers touched: policy (`AGENTS.md`, `CLAUDE.md`), scripts (`.claude/scripts/ai_change_governance.py`, `.claude/scripts/check_ai_governance_review.py`, `.claude/scripts/check_architecture_sync.py`), docs (`docs/ai_change_governance.md`, `docs/architecture.md`, `docs/coder_guide.md`, `docs/coder_guide_detail.md`, `docs/local-mcp-backend-design.md`), git ignore rules, and systemdesign (`docs/systemdesign/architect_ai_change/*`).
+- Human checkpoints impacted: derived-project high-risk review fields remain possible, but this blank template no longer ships project-specific command overlays.
+- Verification: project-specific token scan, command SSOT checks, architecture sync checks, governance layering checks, JSON validation, and Python bytecode compilation for changed scripts.
 
 ## Source of Truth Hierarchy
 - `AGENTS.md`

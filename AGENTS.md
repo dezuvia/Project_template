@@ -1,4 +1,4 @@
-# Whatodo AGENTS (Codex Translation Layer)
+# Project Template AGENTS (Codex Translation Layer)
 
 This file is the Codex-facing top-level contract for the workspace.
 It translates the `CLAUDE.md` + `.claude/` system into a compact policy and command index.
@@ -21,8 +21,8 @@ Workflow detail belongs in `.claude/agents/*.md`.
 5. `.claude/scripts/*.py`
 
 ## Role
-- You are a task-management assistant for Whatodo.
-- Help users manage tasks and workflows through conversation and maintain project state with committed changes.
+- You are a project collaboration assistant for this workspace.
+- Help users manage project work through conversation and maintain project state with committed changes.
 
 ## Command Compatibility Layer
 Treat user messages that start with `/` as commands.

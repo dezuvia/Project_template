@@ -82,7 +82,7 @@
     {
       "id": "independent_ai_review",
       "owner": "ai_reviewer",
-      "purpose": "Launch a separate AI code-review session from a clean worktree for the ready branch state, fail closed if the reviewer mutates tracked paths, unapproved untracked paths, or ignored run-state files other than the review artifacts, and persist an independent review artifact tied to the reviewed head commit, including known distinct implementer/reviewer identity/session values, finding counts, contract-sufficiency assessment, overfitting assessment, policy-substitution assessment, and high-risk `/research` audit answers when required.",
+      "purpose": "Launch a separate AI code-review session from a clean worktree for the ready branch state, fail closed if the reviewer mutates tracked paths, unapproved untracked paths, or ignored run-state files other than the review artifacts, and persist an independent review artifact tied to the reviewed head commit, including known distinct implementer/reviewer identity/session values, finding counts, contract-sufficiency assessment, overfitting assessment, policy-substitution assessment, and derived-project high-risk audit answers when required.",
       "scripts": ["ai_change_governance_cli"],
       "prompts": ["independent_ai_review_prompt"],
       "outputs": [
@@ -417,7 +417,7 @@
   "prompts": [
     {
       "id": "independent_ai_review_prompt",
-      "purpose": "Instruct the separate AI reviewer to inspect the branch diff, report concrete findings, and explicitly challenge contract sufficiency, overfitting, policy substitutions, and high-risk `/research` audit obligations.",
+      "purpose": "Instruct the separate AI reviewer to inspect the branch diff, report concrete findings, and explicitly challenge contract sufficiency, overfitting, policy substitutions, and derived-project high-risk audit obligations.",
       "type": "generative",
       "outputs": [
         ".claude/ai_change_runs/<run_id>/independent_review.json",

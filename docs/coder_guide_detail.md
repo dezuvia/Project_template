@@ -1,4 +1,4 @@
-# Coder Guide — Whatodo Coding Agent Standards
+# Coder Guide — Project Template Coding Agent Standards
 
 **Scope**: All coding agents (Claude, Codex, and others) MUST read this file before any system design, debugging, coding, or code review task.
 
@@ -12,7 +12,7 @@ Before proposing any solution, confirm:
 - [ ] For non-trivial state-changing work, have I used `/ai-plan autopilot` or
       recorded why durable planning is unnecessary?
 - [ ] If this task designs, debugs, or changes command orchestration or backend routing, have I read `docs/local-mcp-backend-design.md`?
-- [ ] If this task fixes or updates a larger command or workflow (for example `/research`), have I planned the matching `/systemdesign` update in `docs/systemdesign/architect_<commandname>/` in the same change?
+- [ ] If this task fixes or updates a larger command or workflow, have I planned the matching `/systemdesign` update in `docs/systemdesign/architect_<commandname>/` in the same change?
 - [ ] Does my solution conflict with or duplicate an existing component?
 - [ ] Am I solving the **actual problem** or a symptom of it?
 - [ ] Is this fix general, or am I overfitting to a single test case?
@@ -186,9 +186,9 @@ When fixing or updating a larger command or workflow, update the matching
 SSOT lives under `docs/systemdesign/architect_<commandname>/`.
 
 Example:
-- `/research` changes must update `docs/systemdesign/architect_research/` when
-  they alter pipeline behavior, prompts, stages, artifact contracts, schemas, or
-  other command-level workflow semantics.
+- Command runtime, prompt, stage, artifact contract, schema, or workflow
+  behavior changes must update the matching
+  `docs/systemdesign/architect_<commandname>/` spec.
 
 Do not leave command or workflow behavior changed in code, prompts, or command
 docs while the corresponding `/systemdesign` spec remains stale.

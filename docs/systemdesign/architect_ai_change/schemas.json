@@ -71,7 +71,7 @@
       "contract_sufficiency_assessment": "str",
       "overfitting_assessment": "str",
       "policy_substitution_assessment": "str",
-      "shared_branching_assessment": "str | null",
+      "high_risk_assessment": "str | null",
       "architecture_sync_assessment": "str | null",
       "generated_at": "iso8601"
     }

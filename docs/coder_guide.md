@@ -14,7 +14,7 @@ All coding agents MUST apply these rules. Full rationale: `docs/coder_guide_deta
 - For AI-assisted code/workflow changes, start with `.claude/scripts/ai_change_governance.py` so the change is risk-classified and the minimum required checks/review lanes are selected up front.
 - Read `docs/local-mcp-backend-design.md` before designing, debugging, or changing command orchestration or backend routing.
 - If modifying a command's pipeline: read `docs/systemdesign/architect_<commandname>/index.json` first. Verify your change does not duplicate an upstream step, break a downstream input contract, or add a deterministic gate where the `type` field says `generative`. Full convention in `docs/architecture_guide.md`.
-- If fixing or updating a larger command or workflow (for example `/research`), update the matching `/systemdesign` spec in the same change: `docs/systemdesign/architect_<commandname>/`. Do not leave command or workflow behavior changed in code while the architecture SSOT stays stale.
+- If fixing or updating a larger command or workflow, update the matching `/systemdesign` spec in the same change: `docs/systemdesign/architect_<commandname>/`. Do not leave command or workflow behavior changed in code while the architecture SSOT stays stale.
 - Confirm your solution does not conflict with or duplicate an existing component.
 - State whether the triggering case is a **general use case** or a **test/edge case** before writing any fix.
 

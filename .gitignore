@@ -1,2 +1,4 @@
 .claude/ai_change_runs/
 .claude/ai_plan_runs/
+__pycache__/
+*.pyc

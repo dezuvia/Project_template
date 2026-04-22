@@ -1,6 +1,6 @@
 # Local MCP Backend Design
 
-This note defines the default command-backend pattern for the Whatodo template.
+This note defines the default command-backend pattern for this project template.
 It replaces the older idea that nested Codex child sessions are the normal way
 to orchestrate ambiguous or multi-step command work.
 
