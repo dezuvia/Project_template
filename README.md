@@ -1,5 +1,33 @@
 # Project Template / 專案模板
 
+## 一般使用方式 / Normal Usage
+
+一般使用者主要只需要 `autopilot`。其他子命令是進階操作，通常只在恢復中斷流程、除錯治理狀態、或手動控制每個 checkpoint 時才需要。
+
+Most users should start with `autopilot`. The other subcommands are advanced controls for resuming interrupted runs, debugging governance state, or manually controlling each checkpoint.
+
+建議流程 / Recommended flow:
+
+```text
+/ai-plan autopilot "<describe the change you want>"
+```
+
+`/ai-plan autopilot` 會產生 scoped acceptance 與 `/ai-change` handoff。接著照 handoff 使用：
+
+`/ai-plan autopilot` emits scoped acceptance and an `/ai-change` handoff. Then follow that handoff:
+
+```text
+/ai-change autopilot "<slice task summary>" --acceptance-source <plan-source> --acceptance-scope-file .claude/ai_plan_runs/<run_id>/acceptance_scope.json
+```
+
+如果是很小、很明確、沒有 durable planning 需求的修改，可以直接使用 `/ai-change autopilot`。
+
+For very small, obvious changes that do not need durable planning, use `/ai-change autopilot` directly.
+
+```text
+/ai-change autopilot "<change summary>"
+```
+
 ## 中文
 
 這是一個空白專案模板，內建 `/ai-plan` 與 `/ai-change` 治理流程，適合用來建立需要 spec-driven planning、AI 協作、分支檢查、在地 review bundle、以及獨立 AI review 的新專案。
@@ -51,28 +79,6 @@ git config core.hooksPath .githooks
 ```bash
 git add .
 git commit -m "Initialize project from template"
-```
-
-### 一般使用方式
-
-一般使用者主要只需要 `autopilot`。其他子命令是進階操作，通常只在恢復中斷流程、除錯治理狀態、或手動控制每個 checkpoint 時才需要。
-
-建議流程：
-
-```text
-/ai-plan autopilot "<describe the change you want>"
-```
-
-`/ai-plan autopilot` 會產生 scoped acceptance 與 `/ai-change` handoff。接著照 handoff 使用：
-
-```text
-/ai-change autopilot "<slice task summary>" --acceptance-source <plan-source> --acceptance-scope-file .claude/ai_plan_runs/<run_id>/acceptance_scope.json
-```
-
-如果是很小、很明確、沒有 durable planning 需求的修改，可以直接使用：
-
-```text
-/ai-change autopilot "<change summary>"
 ```
 
 ### 使用 `/ai-plan`
@@ -185,28 +191,6 @@ git config core.hooksPath .githooks
 ```bash
 git add .
 git commit -m "Initialize project from template"
-```
-
-### Normal Usage
-
-Most users should use `autopilot` first. The other subcommands are advanced controls for resuming interrupted runs, debugging governance state, or manually controlling each checkpoint.
-
-Recommended flow:
-
-```text
-/ai-plan autopilot "<describe the change you want>"
-```
-
-`/ai-plan autopilot` emits scoped acceptance and an `/ai-change` handoff. Then follow that handoff:
-
-```text
-/ai-change autopilot "<slice task summary>" --acceptance-source <plan-source> --acceptance-scope-file .claude/ai_plan_runs/<run_id>/acceptance_scope.json
-```
-
-For very small, obvious changes that do not need durable planning, use:
-
-```text
-/ai-change autopilot "<change summary>"
 ```
 
 ### Using `/ai-plan`
