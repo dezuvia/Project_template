@@ -12,12 +12,12 @@ Most users should start with `autopilot`. The other subcommands are advanced con
 /ai-plan autopilot "<describe the change you want>"
 ```
 
-`/ai-plan autopilot` 會產生 scoped acceptance 與 `/ai-change` handoff。接著照 handoff 使用：
+`/ai-plan autopilot` 會規劃工作，並在結果裡列出下一步要執行的 `/ai-change autopilot ...` 指令。把它輸出的那行 `/ai-change autopilot ...` 指令貼上執行即可。
 
-`/ai-plan autopilot` emits scoped acceptance and an `/ai-change` handoff. Then follow that handoff:
+`/ai-plan autopilot` plans the work and prints the next `/ai-change autopilot ...` command to run. Paste and run that printed `/ai-change autopilot ...` command.
 
 ```text
-/ai-change autopilot "<slice task summary>" --acceptance-source <plan-source> --acceptance-scope-file .claude/ai_plan_runs/<run_id>/acceptance_scope.json
+/ai-change autopilot "<task summary printed by ai-plan>" --acceptance-source <plan-source printed by ai-plan> --acceptance-scope-file .claude/ai_plan_runs/<run_id>/acceptance_scope.json
 ```
 
 如果是很小、很明確、沒有 durable planning 需求的修改，可以直接使用 `/ai-change autopilot`。
